@@ -73,6 +73,7 @@ func (p *StateProcessor) Process(block *EvmBlock, statedb *state.StateDB, cfg vm
 			continue
 		}
 
+
 		// save tx substate into DBs, merge block hashes to env
 		etherBlock := block.RecordingEthBlock()
 		recording := substate.NewSubstate(
@@ -178,6 +179,7 @@ func ApplyTransaction(
 	receipt.BlockHash = statedb.BlockHash()
 	receipt.BlockNumber = header.Number
 	receipt.TransactionIndex = uint(statedb.TxIndex())
+	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
 	return receipt, result.UsedGas, fee, false, err
 }
