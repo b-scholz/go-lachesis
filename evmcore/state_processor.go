@@ -18,7 +18,6 @@ package evmcore
 
 import (
 	"math/big"
-	"math"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -46,12 +45,6 @@ func NewStateProcessor(config *params.ChainConfig, bc DummyChain) *StateProcesso
 	}
 }
 
-// global variable tracking number of transactions in a block
-var (
-	txCounter      int
-	oldBlockNumber uint64 = math.MaxUint64
-)
-
 // Process processes the state changes according to the Ethereum rules by running
 // the transaction messages using the statedb and applying any rewards to both
 // the processor (coinbase) and any included uncles.
@@ -69,10 +62,6 @@ func (p *StateProcessor) Process(block *EvmBlock, statedb *state.StateDB, cfg vm
 		totalFee = new(big.Int)
 	)
 	// Iterate over and process the individual transactions
-	if oldBlockNumber != block.NumberU64() {
-		txCounter = 0
-		oldBlockNumber = block.NumberU64()
-	}
 	for i, tx := range block.Transactions {
 		msg, _ := tx.AsMessage(types.MakeSigner(p.config, block.Header().Number))
 		statedb.Prepare(tx.Hash(), block.Hash, i)
@@ -94,9 +83,8 @@ func (p *StateProcessor) Process(block *EvmBlock, statedb *state.StateDB, cfg vm
 			substate.NewSubstateMessage(&msg),
 			substate.NewSubstateResult(receipt),
 		)
-		substate.PutSubstate(block.NumberU64(), txCounter, recording)
+		substate.PutSubstate(block.NumberU64(), i, recording)
 
-		txCounter++
 		totalFee.Add(totalFee, fee)
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
